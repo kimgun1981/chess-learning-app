@@ -555,7 +555,7 @@ export default function ChessApp() {
               {glyph && (
                 <span className={piece?.color === 'w'
                   ? 'text-white [text-shadow:-1px_-1px_0_#222,1px_-1px_0_#222,-1px_1px_0_#222,1px_1px_0_#222] select-none'
-                  : 'text-slate-950 drop-shadow select-none'}>
+                  : 'text-slate-900 [text-shadow:0_0_3px_rgba(255,255,255,0.9),1px_1px_0_rgba(255,255,255,0.8),-1px_-1px_0_rgba(255,255,255,0.8)] select-none'}>
                   {glyph}
                 </span>
               )}
@@ -581,7 +581,7 @@ export default function ChessApp() {
           </div>
         </header>
         <main className="max-w-5xl mx-auto px-4 py-5 flex flex-col lg:flex-row gap-5 items-start">
-          <div className="w-full lg:w-[560px] lg:flex-shrink-0 mx-auto lg:mx-0">{boardEl}</div>
+          <div className="w-full flex-shrink-0 lg:w-[560px] mx-auto lg:mx-0">{boardEl}</div>
           <div className="w-full lg:w-80 xl:w-96 flex flex-col gap-3">
             <div className={`rounded-xl px-4 py-3 border ${game.isCheck() ? 'bg-red-950/80 border-red-500/60' : 'bg-slate-800 border-slate-700'}`}>
               <p className="text-sm font-semibold leading-relaxed text-emerald-300">{tip}</p>
