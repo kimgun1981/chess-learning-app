@@ -547,10 +547,10 @@ export default function ChessApp() {
             <button key={sq} onClick={() => handleSquareClick(sq)}
               className={`relative flex items-center justify-center text-[clamp(1.1rem,4vw,2.8rem)] ${isLight ? 'bg-amber-100' : 'bg-amber-700'} ${ring} hover:brightness-110 transition-all`}>
               {cIdx === 0 && (
-                <span className={`absolute top-0.5 left-0.5 text-[clamp(0.45rem,1.2vw,0.65rem)] font-bold leading-none ${labelColor}`}>{RANKS[rIdx]}</span>
+                <span className={`absolute top-0.5 left-0.5 text-[clamp(0.6rem,1.4vw,0.75rem)] font-mono font-bold leading-none ${labelColor}`}>{RANKS[rIdx]}</span>
               )}
               {rIdx === 7 && (
-                <span className={`absolute bottom-0.5 right-0.5 text-[clamp(0.45rem,1.2vw,0.65rem)] font-bold leading-none ${labelColor}`}>{FILES[cIdx]}</span>
+                <span className={`absolute bottom-0.5 right-0.5 text-[clamp(0.6rem,1.4vw,0.75rem)] font-mono font-bold leading-none ${labelColor}`}>{FILES[cIdx]}</span>
               )}
               {glyph && (
                 <span className={piece?.color === 'w'
