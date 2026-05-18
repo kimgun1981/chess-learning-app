@@ -581,7 +581,7 @@ export default function ChessApp() {
           </div>
         </header>
         <main className="max-w-5xl mx-auto px-4 py-5 flex flex-col lg:flex-row gap-5 items-start">
-          <div className="w-full lg:flex-1 max-w-[560px] mx-auto lg:mx-0">{boardEl}</div>
+          <div className="w-full lg:w-[560px] lg:flex-shrink-0 mx-auto lg:mx-0">{boardEl}</div>
           <div className="w-full lg:w-80 xl:w-96 flex flex-col gap-3">
             <div className={`rounded-xl px-4 py-3 border ${game.isCheck() ? 'bg-red-950/80 border-red-500/60' : 'bg-slate-800 border-slate-700'}`}>
               <p className="text-sm font-semibold leading-relaxed text-emerald-300">{tip}</p>
@@ -681,7 +681,7 @@ export default function ChessApp() {
 
       {/* PC */}
       <main className="hidden lg:flex max-w-6xl mx-auto px-4 py-5 gap-6 items-start">
-        <div className="flex-1 max-w-[640px]">{boardEl}</div>
+        <div className="w-[580px] flex-shrink-0">{boardEl}</div>
         <div className="w-72 xl:w-80 flex flex-col gap-3">
           <PlayerCard color="b" time={blackTime} timeControl={timeControl} isActive={isBlackTurn}
             capturedTypes={capturedByColor.byBlack} advantage={blackMat} isTimedOut={timedOut === 'b'} />
