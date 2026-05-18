@@ -414,9 +414,24 @@ export default function ChessApp() {
           else if (isSelected) ring = 'ring-4 ring-inset ring-sky-400 bg-sky-300/20';
           else if (isHint)     ring = 'ring-4 ring-inset ring-yellow-400 bg-yellow-200/20';
 
+          const isLight = (rIdx + cIdx) % 2 === 0;
+          const labelColor = isLight ? 'text-amber-700/70' : 'text-amber-100/70';
+
           return (
             <button key={sq} onClick={() => handleSquareClick(sq)}
-              className={`relative flex items-center justify-center text-[clamp(1.1rem,4vw,2.8rem)] ${(rIdx + cIdx) % 2 === 0 ? 'bg-amber-100' : 'bg-amber-700'} ${ring} hover:brightness-110 transition-all`}>
+              className={`relative flex items-center justify-center text-[clamp(1.1rem,4vw,2.8rem)] ${isLight ? 'bg-amber-100' : 'bg-amber-700'} ${ring} hover:brightness-110 transition-all`}>
+              {/* 랭크 숫자 - 왼쪽 열 */}
+              {cIdx === 0 && (
+                <span className={`absolute top-0.5 left-0.5 text-[clamp(0.45rem,1.2vw,0.65rem)] font-bold leading-none ${labelColor}`}>
+                  {RANKS[rIdx]}
+                </span>
+              )}
+              {/* 파일 문자 - 아랫 행 */}
+              {rIdx === 7 && (
+                <span className={`absolute bottom-0.5 right-0.5 text-[clamp(0.45rem,1.2vw,0.65rem)] font-bold leading-none ${labelColor}`}>
+                  {FILES[cIdx]}
+                </span>
+              )}
               {glyph && (
                 <span className={piece?.color === 'w'
                   ? 'text-white [text-shadow:-1px_-1px_0_#222,1px_-1px_0_#222,-1px_1px_0_#222,1px_1px_0_#222] select-none'
