@@ -555,8 +555,8 @@ export default function ChessApp() {
                   {rIdx === 7 && <span className={`absolute bottom-0.5 right-0.5 text-[clamp(0.45rem,1.2vw,0.7rem)] font-mono font-bold leading-none ${lc}`}>{file}</span>}
                   {glyph && (
                     <span className={piece?.color === 'w'
-                      ? 'text-white [text-shadow:-1.5px_-1.5px_0_#000,1.5px_-1.5px_0_#000,-1.5px_1.5px_0_#000,1.5px_1.5px_0_#000,0_0_8px_rgba(0,0,0,1),0_2px_6px_rgba(0,0,0,0.7)] select-none'
-                      : 'text-slate-900 [text-shadow:0_0_4px_rgba(255,255,255,1),1px_1px_0_rgba(255,255,255,0.9),-1px_-1px_0_rgba(255,255,255,0.9),0_0_10px_rgba(255,255,255,0.6)] select-none'}>
+                      ? 'text-white [text-shadow:0_0_3px_rgba(0,0,0,0.9),1px_1px_0_rgba(0,0,0,0.8),-1px_-1px_0_rgba(0,0,0,0.8)] select-none'
+                      : 'text-slate-900 [text-shadow:0_0_3px_rgba(255,255,255,0.9),1px_1px_0_rgba(255,255,255,0.8),-1px_-1px_0_rgba(255,255,255,0.8)] select-none'}>
                       {glyph}
                     </span>
                   )}
