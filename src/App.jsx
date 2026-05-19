@@ -6,7 +6,7 @@ const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const RANKS = [8, 7, 6, 5, 4, 3, 2, 1];
 
 const UNICODE = {
-  wP:'♟', wN:'♞', wB:'♝', wR:'♜', wQ:'♛', wK:'♚',
+  wP:'♙', wN:'♘', wB:'♗', wR:'♖', wQ:'♕', wK:'♔',
   bP:'♟', bN:'♞', bB:'♝', bR:'♜', bQ:'♛', bK:'♚',
 };
 const pieceGlyph = p => p ? UNICODE[`${p.color}${p.type.toUpperCase()}`] : null;
@@ -555,8 +555,8 @@ export default function ChessApp() {
                   {rIdx === 7 && <span className={`absolute bottom-0.5 right-0.5 text-[clamp(0.45rem,1.2vw,0.7rem)] font-mono font-bold leading-none ${lc}`}>{file}</span>}
                   {glyph && (
                     <span className={piece?.color === 'w'
-                      ? 'select-none [filter:brightness(0)_invert(1)_drop-shadow(0px_0px_3px_rgba(0,0,0,1))_drop-shadow(1px_1px_0px_rgba(0,0,0,0.7))]'
-                      : 'select-none [filter:drop-shadow(0px_0px_3px_rgba(255,255,255,0.9))_drop-shadow(1px_1px_0px_rgba(255,255,255,0.7))]'}>
+                      ? 'text-white [text-shadow:-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000,0_0_6px_rgba(0,0,0,0.6)] select-none'
+                      : 'text-gray-900 [text-shadow:0_0_4px_rgba(255,255,255,1),1px_1px_0_rgba(255,255,255,0.8),-1px_-1px_0_rgba(255,255,255,0.8)] select-none'}>
                       {glyph}
                     </span>
                   )}
