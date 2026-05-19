@@ -518,61 +518,64 @@ export default function ChessApp() {
   if (screen === 'timeSelect') return <TimeSelect onSelect={tc => startGame('human', undefined, tc)} onBack={() => setScreen('menu')} />;
 
   // ── Game screen ────────────────────────────────────────────────────────────
-  const isOver     = game.isGameOver() || !!timedOut;
-  const pairCount  = Math.ceil(moveSANs.length / 2);
-  const diffInfo   = DIFFICULTIES.find(d => d.id === difficulty);
-  const whiteMat   = materialAdvantage > 0 ? Math.round(materialAdvantage) : 0;
-  const blackMat   = materialAdvantage < 0 ? Math.round(-materialAdvantage) : 0;
+  const isOver    = game.isGameOver() || !!timedOut;
+  const pairCount = Math.ceil(moveSANs.length / 2);
+  const diffInfo  = DIFFICULTIES.find(d => d.id === difficulty);
+  const whiteMat  = materialAdvantage > 0 ? Math.round(materialAdvantage) : 0;
+  const blackMat  = materialAdvantage < 0 ? Math.round(-materialAdvantage) : 0;
 
-  // Board
-  const boardEl = (
-    <div className="relative w-full aspect-square">
-      <div className="grid grid-cols-8 w-full h-full rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl">
-        {board.map((row, rIdx) => row.map((piece, cIdx) => {
-          const sq         = `${FILES[cIdx]}${RANKS[rIdx]}`;
-          const isSelected = selectedSq === sq;
-          const isTarget   = legalTargets.has(sq);
-          const isHint     = hint?.from === sq || hint?.to === sq;
-          const isCheck    = kingCheckSq === sq;
-          const glyph      = pieceGlyph(piece);
-          const isLight    = (rIdx + cIdx) % 2 === 0;
-          const labelColor = isLight ? 'text-amber-700/70' : 'text-amber-100/70';
+  // Board renderer — flipped=true shows board from black's perspective
+  function renderBoard(flipped = false) {
+    const dispRanks = flipped ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
+    const dispFiles = flipped ? ['h','g','f','e','d','c','b','a'] : FILES;
+    return (
+      <div className="relative w-full aspect-square">
+        <div className="grid grid-cols-8 w-full h-full rounded-xl overflow-hidden border-4 border-slate-700 shadow-2xl">
+          {dispRanks.map((rank, rIdx) =>
+            dispFiles.map((file, cIdx) => {
+              const sq         = `${file}${rank}`;
+              const piece      = board[8 - rank][FILES.indexOf(file)];
+              const isSelected = selectedSq === sq;
+              const isTarget   = legalTargets.has(sq);
+              const isHint     = hint?.from === sq || hint?.to === sq;
+              const isCheck    = kingCheckSq === sq;
+              const glyph      = pieceGlyph(piece);
+              const isLight    = (rIdx + cIdx) % 2 === 0;
+              const lc         = isLight ? 'text-amber-700/70' : 'text-amber-100/70';
 
-          let ring = '';
-          if (isCheck)         ring = 'ring-4 ring-inset ring-red-500 bg-red-400/30';
-          else if (isSelected) ring = 'ring-4 ring-inset ring-sky-400 bg-sky-300/20';
-          else if (isHint)     ring = 'ring-4 ring-inset ring-yellow-400 bg-yellow-200/20';
+              let ring = '';
+              if (isCheck)         ring = 'ring-4 ring-inset ring-red-500 bg-red-400/30';
+              else if (isSelected) ring = 'ring-4 ring-inset ring-sky-400 bg-sky-300/20';
+              else if (isHint)     ring = 'ring-4 ring-inset ring-yellow-400 bg-yellow-200/20';
 
-          return (
-            <button key={sq} onClick={() => handleSquareClick(sq)}
-              className={`relative flex items-center justify-center text-[clamp(1.1rem,4vw,2.8rem)] ${isLight ? 'bg-amber-100' : 'bg-amber-700'} ${ring} hover:brightness-110 transition-all`}>
-              {cIdx === 0 && (
-                <span className={`absolute top-0.5 left-0.5 text-[clamp(0.6rem,1.4vw,0.75rem)] font-mono font-bold leading-none ${labelColor}`}>{RANKS[rIdx]}</span>
-              )}
-              {rIdx === 7 && (
-                <span className={`absolute bottom-0.5 right-0.5 text-[clamp(0.6rem,1.4vw,0.75rem)] font-mono font-bold leading-none ${labelColor}`}>{FILES[cIdx]}</span>
-              )}
-              {glyph && (
-                <span className={piece?.color === 'w'
-                  ? 'text-white [text-shadow:-1px_-1px_0_#222,1px_-1px_0_#222,-1px_1px_0_#222,1px_1px_0_#222] select-none'
-                  : 'text-slate-900 [text-shadow:0_0_3px_rgba(255,255,255,0.9),1px_1px_0_rgba(255,255,255,0.8),-1px_-1px_0_rgba(255,255,255,0.8)] select-none'}>
-                  {glyph}
-                </span>
-              )}
-              {isTarget && <span className="absolute w-[28%] h-[28%] rounded-full bg-sky-500/70 shadow-[0_0_10px_rgba(14,165,233,0.8)] animate-pulse pointer-events-none" />}
-            </button>
-          );
-        }))}
+              return (
+                <button key={sq} onClick={() => handleSquareClick(sq)}
+                  className={`relative flex items-center justify-center text-[clamp(1rem,5vw,3rem)] ${isLight ? 'bg-amber-100' : 'bg-amber-700'} ${ring} hover:brightness-110 transition-all`}>
+                  {cIdx === 0 && <span className={`absolute top-0.5 left-0.5 text-[clamp(0.45rem,1.2vw,0.7rem)] font-mono font-bold leading-none ${lc}`}>{rank}</span>}
+                  {rIdx === 7 && <span className={`absolute bottom-0.5 right-0.5 text-[clamp(0.45rem,1.2vw,0.7rem)] font-mono font-bold leading-none ${lc}`}>{file}</span>}
+                  {glyph && (
+                    <span className={piece?.color === 'w'
+                      ? 'text-white [text-shadow:-1px_-1px_0_#222,1px_-1px_0_#222,-1px_1px_0_#222,1px_1px_0_#222] select-none'
+                      : 'text-slate-900 [text-shadow:0_0_3px_rgba(255,255,255,0.9),1px_1px_0_rgba(255,255,255,0.8),-1px_-1px_0_rgba(255,255,255,0.8)] select-none'}>
+                      {glyph}
+                    </span>
+                  )}
+                  {isTarget && <span className="absolute w-[28%] h-[28%] rounded-full bg-sky-500/70 shadow-[0_0_10px_rgba(14,165,233,0.8)] animate-pulse pointer-events-none" />}
+                </button>
+              );
+            })
+          )}
+        </div>
+        {isOver && <GameOverModal game={game} mode={gameMode} timedOut={timedOut} onReset={handleReset} onMenu={goMenu} />}
       </div>
-      {isOver && <GameOverModal game={game} mode={gameMode} timedOut={timedOut} onReset={handleReset} onMenu={goMenu} />}
-    </div>
-  );
+    );
+  }
 
   // ── AI mode ────────────────────────────────────────────────────────────────
   if (gameMode === 'ai') {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100">
-        <header className="flex items-center justify-between px-5 py-3 border-b border-slate-800 max-w-5xl mx-auto">
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+        <header className="flex items-center justify-between px-5 py-3 border-b border-slate-800 flex-shrink-0">
           <h1 className="text-lg font-bold text-emerald-400">♟ 체스 교실</h1>
           <div className="flex items-center gap-2">
             {aiThinking && <span className="text-xs text-sky-400 animate-pulse">AI 생각 중...</span>}
@@ -580,9 +583,11 @@ export default function ChessApp() {
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-sky-900 text-sky-300">🤖 AI 연습</span>
           </div>
         </header>
-        <main className="max-w-5xl mx-auto px-4 py-5 flex flex-col lg:flex-row gap-5 items-start">
-          <div className="w-full flex-shrink-0 lg:w-[560px] mx-auto lg:mx-0">{boardEl}</div>
-          <div className="w-full lg:w-80 xl:w-96 flex flex-col gap-3">
+        <main className="flex-1 w-full max-w-5xl mx-auto px-3 py-4 flex flex-col md:flex-row gap-4 items-start">
+          <div className="w-full md:w-[52%] lg:max-w-[520px] flex-shrink-0 mx-auto md:mx-0">
+            {renderBoard(false)}
+          </div>
+          <div className="w-full md:flex-1 flex flex-col gap-3">
             <div className={`rounded-xl px-4 py-3 border ${game.isCheck() ? 'bg-red-950/80 border-red-500/60' : 'bg-slate-800 border-slate-700'}`}>
               <p className="text-sm font-semibold leading-relaxed text-emerald-300">{tip}</p>
             </div>
@@ -608,7 +613,7 @@ export default function ChessApp() {
             </div>
             <div className="bg-slate-800 rounded-xl p-3 border border-slate-700">
               <p className="text-xs font-semibold text-slate-400 mb-2">📋 기보 ({moveSANs.length}수)</p>
-              <div className="max-h-36 lg:max-h-52 overflow-y-auto text-xs font-mono">
+              <div className="max-h-36 md:max-h-52 overflow-y-auto text-xs font-mono">
                 {moveSANs.length === 0 ? <p className="text-slate-600 text-center py-2">아직 수가 없습니다</p> : (
                   <div className="grid grid-cols-[1.5rem_1fr_1fr] gap-x-2 gap-y-0.5">
                     {Array.from({ length: pairCount }).map((_, i) => (
@@ -646,21 +651,9 @@ export default function ChessApp() {
   const isBlackTurn = game.turn() === 'b' && !isOver;
   const isWhiteTurn = game.turn() === 'w' && !isOver;
 
-  const twoPlayerButtons = (
-    <div className="flex gap-2">
-      <button onClick={handleUndo} disabled={moveSANs.length === 0 || !!timedOut}
-        className="flex-1 py-3 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-bold text-sm transition-all">
-        ↩ 무르기
-      </button>
-      <button onClick={handleReset} className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-sm transition-all">
-        🔄 새 게임
-      </button>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="flex items-center justify-between px-5 py-3 border-b border-slate-800">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800 flex-shrink-0">
         <h1 className="text-lg font-bold text-emerald-400">♟ 체스 교실</h1>
         <div className="flex items-center gap-2">
           {timeControl > 0 && <span className="text-xs text-slate-400">{TIME_OPTIONS.find(t => t.seconds === timeControl)?.label}</span>}
@@ -669,27 +662,43 @@ export default function ChessApp() {
         </div>
       </header>
 
-      {/* Mobile */}
-      <div className="lg:hidden px-3 py-3 flex flex-col gap-3 max-w-lg mx-auto">
-        <PlayerCard color="b" time={blackTime} timeControl={timeControl} isActive={isBlackTurn}
-          capturedTypes={capturedByColor.byBlack} advantage={blackMat} isTimedOut={timedOut === 'b'} />
-        {boardEl}
-        <PlayerCard color="w" time={whiteTime} timeControl={timeControl} isActive={isWhiteTurn}
-          capturedTypes={capturedByColor.byWhite} advantage={whiteMat} isTimedOut={timedOut === 'w'} />
-        {twoPlayerButtons}
-      </div>
+      <main className="flex-1 flex flex-col lg:flex-row gap-4 p-3 lg:p-5 w-full max-w-7xl mx-auto">
+        {/* Board column: black card (rotated) → board → white card */}
+        <div className="flex flex-col gap-2 w-full lg:flex-1 lg:max-w-2xl mx-auto">
+          {/* Black card rotated 180° — readable for player sitting across the table */}
+          <div style={{ transform: 'rotate(180deg)' }}>
+            <PlayerCard color="b" time={blackTime} timeControl={timeControl} isActive={isBlackTurn}
+              capturedTypes={capturedByColor.byBlack} advantage={blackMat} isTimedOut={timedOut === 'b'} />
+          </div>
 
-      {/* PC */}
-      <main className="hidden lg:flex max-w-6xl mx-auto px-4 py-5 gap-6 items-start">
-        <div className="w-[580px] flex-shrink-0">{boardEl}</div>
-        <div className="w-72 xl:w-80 flex flex-col gap-3">
-          <PlayerCard color="b" time={blackTime} timeControl={timeControl} isActive={isBlackTurn}
-            capturedTypes={capturedByColor.byBlack} advantage={blackMat} isTimedOut={timedOut === 'b'} />
+          {/* Board flips to show current player's pieces at the bottom */}
+          <div className="w-full">
+            {renderBoard(game.turn() === 'b')}
+          </div>
 
-          {/* Move history */}
+          {/* White card — normal orientation */}
+          <PlayerCard color="w" time={whiteTime} timeControl={timeControl} isActive={isWhiteTurn}
+            capturedTypes={capturedByColor.byWhite} advantage={whiteMat} isTimedOut={timedOut === 'w'} />
+
+          <div className="flex gap-2">
+            <button onClick={handleUndo} disabled={moveSANs.length === 0 || !!timedOut}
+              className="flex-1 py-3 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-bold text-sm transition-all">
+              ↩ 무르기
+            </button>
+            <button onClick={handleReset} className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-sm transition-all">
+              🔄 새 게임
+            </button>
+          </div>
+        </div>
+
+        {/* Side panel: move history visible on large screens */}
+        <div className="hidden lg:flex flex-col gap-3 w-64 xl:w-80">
+          <div className={`rounded-xl px-4 py-3 border ${game.isCheck() ? 'bg-red-950/80 border-red-500/60' : 'bg-slate-800 border-slate-700'}`}>
+            <p className="text-sm font-semibold leading-relaxed text-emerald-300">{tip}</p>
+          </div>
           <div className="bg-slate-800 rounded-xl p-3 border border-slate-700 flex-1">
             <p className="text-xs font-semibold text-slate-400 mb-2">📋 기보 ({moveSANs.length}수)</p>
-            <div className="max-h-64 overflow-y-auto text-xs font-mono">
+            <div className="overflow-y-auto text-xs font-mono max-h-[60vh]">
               {moveSANs.length === 0 ? <p className="text-slate-600 text-center py-2">아직 수가 없습니다</p> : (
                 <div className="grid grid-cols-[1.5rem_1fr_1fr] gap-x-2 gap-y-0.5">
                   {Array.from({ length: pairCount }).map((_, i) => (
@@ -703,10 +712,6 @@ export default function ChessApp() {
               )}
             </div>
           </div>
-
-          <PlayerCard color="w" time={whiteTime} timeControl={timeControl} isActive={isWhiteTurn}
-            capturedTypes={capturedByColor.byWhite} advantage={whiteMat} isTimedOut={timedOut === 'w'} />
-          {twoPlayerButtons}
         </div>
       </main>
     </div>
