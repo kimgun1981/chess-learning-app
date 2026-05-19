@@ -530,7 +530,7 @@ export default function ChessApp() {
     const dispFiles = flipped ? ['h','g','f','e','d','c','b','a'] : FILES;
     return (
       <div className="relative w-full aspect-square">
-        <div className="grid grid-cols-8 w-full h-full rounded-xl overflow-hidden border-4 border-slate-700 shadow-2xl">
+        <div className="grid grid-cols-8 grid-rows-8 w-full h-full rounded-xl overflow-hidden border-4 border-slate-700 shadow-2xl">
           {dispRanks.map((rank, rIdx) =>
             dispFiles.map((file, cIdx) => {
               const sq         = `${file}${rank}`;
@@ -550,13 +550,13 @@ export default function ChessApp() {
 
               return (
                 <button key={sq} onClick={() => handleSquareClick(sq)}
-                  className={`relative flex items-center justify-center text-[clamp(1rem,5vw,3rem)] ${isLight ? 'bg-amber-100' : 'bg-amber-700'} ${ring} hover:brightness-110 transition-all`}>
+                  className={`relative flex items-center justify-center h-full text-[clamp(1rem,5vw,3rem)] ${isLight ? 'bg-amber-100' : 'bg-amber-700'} ${ring} hover:brightness-110 transition-all`}>
                   {cIdx === 0 && <span className={`absolute top-0.5 left-0.5 text-[clamp(0.45rem,1.2vw,0.7rem)] font-mono font-bold leading-none ${lc}`}>{rank}</span>}
                   {rIdx === 7 && <span className={`absolute bottom-0.5 right-0.5 text-[clamp(0.45rem,1.2vw,0.7rem)] font-mono font-bold leading-none ${lc}`}>{file}</span>}
                   {glyph && (
                     <span className={piece?.color === 'w'
-                      ? 'text-white [text-shadow:-1px_-1px_0_#222,1px_-1px_0_#222,-1px_1px_0_#222,1px_1px_0_#222] select-none'
-                      : 'text-slate-900 [text-shadow:0_0_3px_rgba(255,255,255,0.9),1px_1px_0_rgba(255,255,255,0.8),-1px_-1px_0_rgba(255,255,255,0.8)] select-none'}>
+                      ? 'text-white [text-shadow:-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000,0_0_6px_rgba(0,0,0,0.95),0_0_14px_rgba(0,0,0,0.5)] select-none'
+                      : 'text-slate-900 [text-shadow:0_0_4px_rgba(255,255,255,1),1px_1px_0_rgba(255,255,255,0.9),-1px_-1px_0_rgba(255,255,255,0.9),0_0_10px_rgba(255,255,255,0.6)] select-none'}>
                       {glyph}
                     </span>
                   )}
