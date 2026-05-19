@@ -673,7 +673,7 @@ export default function ChessApp() {
 
           {/* Board flips to show current player's pieces at the bottom */}
           <div className="w-full">
-            {renderBoard(game.turn() === 'b')}
+            {renderBoard(false)}
           </div>
 
           {/* White card — normal orientation */}
