@@ -1,16 +1,49 @@
-# React + Vite
+# ♟ 체스 교실 (Chess Learning App)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+체스를 처음 배우는 사람을 위한 한국어 학습용 체스 웹앱입니다.
+AI와 대결하며 기물의 이동 규칙·전략을 익히거나, 두 명이 한 화면에서 대국할 수 있습니다.
 
-Currently, two official plugins are available:
+**🔗 바로 사용하기:** https://kimgun1981.github.io/chess-learning-app/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 주요 기능
 
-## React Compiler
+### 🤖 1인용 (AI 연습)
+- **3단계 난이도** — 초급(무작위) · 중급(기물 잡기·체크·중앙 장악) · 심화(미니맥스 3수 앞 탐색)
+- **💡 힌트** — 현재 국면에서 추천 수를 보여줍니다
+- **🤖 AI 해설** — AI가 둔 수의 의도를 한국어로 설명합니다
+- **기물 설명** — 기물을 클릭하면 이동 규칙이 표시됩니다
+- **단계별 팁** — 오프닝·미들게임·엔드게임 상황에 맞는 조언
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 👥 2인용
+- **체스 클럭** — 무제한 / 1분 / 3분 / 5분 / 10분 / 30분
+- **잡은 기물 · 점수판** — 양쪽 플레이어의 기물 우위를 실시간 표시
+- **마주 보는 배치** — 흑 정보 카드를 180° 회전해 맞은편 플레이어가 읽기 편함
 
-## Expanding the ESLint configuration
+### 공통
+- 체크 / 체크메이트 / 스테일메이트 / 3회 반복 / 50수 규칙 판정
+- 캐슬링 · 앙파상 · 폰 프로모션 등 특수 규칙 지원
+- 한 수 무르기 · 기보 표시 · 반응형 레이아웃
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 기술 스택
+
+- **React 19** + **Vite** — UI 및 빌드
+- **chess.js** — 규칙 검증 및 국면 관리
+- **Tailwind CSS v4** — 스타일링
+
+## 로컬 실행
+
+```bash
+npm install
+npm run dev      # 개발 서버
+npm run build    # 프로덕션 빌드
+npm run lint     # 린트 검사
+npm run deploy   # 빌드 후 GitHub Pages 배포
+```
+
+## 프로젝트 문서
+
+- [`docs/STRUCTURE.md`](docs/STRUCTURE.md) — 프로젝트 구조도
+- [`docs/DESCRIPTION.md`](docs/DESCRIPTION.md) — 기능 설명서
+- [`docs/MANUAL.md`](docs/MANUAL.md) — 사용자 매뉴얼
+</content>
+</invoke>

@@ -320,7 +320,6 @@ export default function ChessApp() {
   const [moveSANs, setMoveSANs]           = useState([]);
   const [selectedSq, setSelectedSq]       = useState(null);
   const [selectedPiece, setSelectedPiece] = useState(null);
-  const [aiThinking, setAiThinking]       = useState(false);
   const [commentary, setCommentary]       = useState('');
   const [tip, setTip]                     = useState('');
   const [hint, setHint]                   = useState(null);
@@ -341,6 +340,10 @@ export default function ChessApp() {
   }, [moveSANs]);
 
   const board = useMemo(() => game.board(), [game]);
+
+  // AI is "thinking" exactly while it is black's turn in an active AI game.
+  const aiThinking = gameMode === 'ai' && screen === 'game'
+    && game.turn() === 'b' && !game.isGameOver() && !timedOut;
 
   const legalMoves = useMemo(() => {
     if (!selectedSq) return [];
@@ -386,7 +389,6 @@ export default function ChessApp() {
     if (gameMode !== 'ai' || game.turn() !== 'b' || game.isGameOver()) return;
     if (aiInProgress.current) return;
     aiInProgress.current = true;
-    setAiThinking(true);
     const cGame = game, cCount = moveSANs.length, cDiff = difficulty;
     const delay = difficulty === 'hard' ? 1400 : 900;
     aiTimer.current = setTimeout(() => {
@@ -399,44 +401,31 @@ export default function ChessApp() {
         if (!g.isGameOver()) setTip(getTip(g, cCount + 1));
       }
       aiInProgress.current = false;
-      setAiThinking(false);
     }, delay);
     return () => { clearTimeout(aiTimer.current); aiInProgress.current = false; };
+    // `game`/`difficulty` are intentionally omitted: `game` derives from `moveSANs`
+    // (already a dep) and adding it would re-fire the effect on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moveSANs, gameMode, screen]);
 
-  // Chess clock
+  // Chess clock — countdown and timeout detection run inside the interval
+  // callback (not the effect body) so React's set-state-in-effect rule is satisfied.
   useEffect(() => {
     clearInterval(timerInterval.current);
     if (screen !== 'game' || gameMode !== 'human' || timeControl === 0) return;
     if (game.isGameOver() || timedOut) return;
     const activeColor = game.turn();
     timerInterval.current = setInterval(() => {
-      if (activeColor === 'w') setWhiteTime(p => Math.max(0, p - 1));
-      else                     setBlackTime(p => Math.max(0, p - 1));
+      const tick = setter => setter(p => {
+        if (p <= 1) { clearInterval(timerInterval.current); setTimedOut(activeColor); return 0; }
+        return p - 1;
+      });
+      tick(activeColor === 'w' ? setWhiteTime : setBlackTime);
     }, 1000);
     return () => clearInterval(timerInterval.current);
+    // `game` derives from `moveSANs` (already a dep); omitting it is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moveSANs, screen, gameMode, timedOut, timeControl]);
-
-  // Timeout detection
-  useEffect(() => {
-    if (whiteTime === 0 && timeControl > 0 && screen === 'game' && moveSANs.length > 0 && !timedOut) {
-      clearInterval(timerInterval.current);
-      setTimedOut('w');
-    }
-  }, [whiteTime]);
-
-  useEffect(() => {
-    if (blackTime === 0 && timeControl > 0 && screen === 'game' && moveSANs.length > 0 && !timedOut) {
-      clearInterval(timerInterval.current);
-      setTimedOut('b');
-    }
-  }, [blackTime]);
-
-  // Human turn tip
-  useEffect(() => {
-    if (screen !== 'game' || gameMode !== 'human' || game.isGameOver()) return;
-    setTip(game.turn() === 'w' ? '⚪ 백(White) 차례입니다' : '⚫ 흑(Black) 차례입니다');
-  }, [moveSANs, gameMode, screen]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   function handleSquareClick(sq) {
@@ -449,6 +438,9 @@ export default function ChessApp() {
       if (result) {
         setMoveSANs(prev => [...prev, result.san]);
         if (gameMode === 'ai' && !g.isGameOver()) { setTip('🤖 AI가 최선의 수를 고민하고 있습니다...'); setCommentary(''); }
+        else if (gameMode === 'human' && !g.isGameOver()) {
+          setTip(g.turn() === 'w' ? '⚪ 백(White) 차례입니다' : '⚫ 흑(Black) 차례입니다');
+        }
       }
       setSelectedSq(null); setSelectedPiece(null);
       return;
@@ -469,7 +461,7 @@ export default function ChessApp() {
   function handleUndo() {
     clearTimeout(aiTimer.current); aiInProgress.current = false;
     clearInterval(timerInterval.current);
-    setAiThinking(false); setHint(null);
+    setHint(null);
     setSelectedSq(null); setSelectedPiece(null); setCommentary('');
     setTip('한 수 물렀습니다.');
     setMoveSANs(prev => {
@@ -481,7 +473,7 @@ export default function ChessApp() {
   function handleReset() {
     clearTimeout(aiTimer.current); aiInProgress.current = false;
     clearInterval(timerInterval.current);
-    setAiThinking(false); setMoveSANs([]); setSelectedSq(null);
+    setMoveSANs([]); setSelectedSq(null);
     setSelectedPiece(null); setCommentary(''); setHint(null);
     setWhiteTime(timeControl); setBlackTime(timeControl); setTimedOut(null);
     setTip(gameMode === 'ai' ? '💡 중앙 폰(e4 또는 d4)을 먼저 전진시켜보세요!' : '⚪ 백(White) 차례입니다');
@@ -497,7 +489,7 @@ export default function ChessApp() {
     setWhiteTime(tc_); setBlackTime(tc_); setTimedOut(null);
     setScreen('game');
     setMoveSANs([]); setSelectedSq(null); setSelectedPiece(null);
-    setCommentary(''); setHint(null); setAiThinking(false);
+    setCommentary(''); setHint(null);
     setTip(mode === 'ai' ? '💡 중앙 폰(e4 또는 d4)을 먼저 전진시켜보세요!' : '⚪ 백(White) 차례입니다');
   }
 
@@ -671,7 +663,8 @@ export default function ChessApp() {
               capturedTypes={capturedByColor.byBlack} advantage={blackMat} isTimedOut={timedOut === 'b'} />
           </div>
 
-          {/* Board flips to show current player's pieces at the bottom */}
+          {/* Board stays in white's orientation; the rotated black card above
+              keeps the across-the-table player's info readable. */}
           <div className="w-full">
             {renderBoard(false)}
           </div>
