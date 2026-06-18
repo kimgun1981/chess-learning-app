@@ -643,6 +643,14 @@ export default function ChessApp() {
   const isBlackTurn = game.turn() === 'b' && !isOver;
   const isWhiteTurn = game.turn() === 'w' && !isOver;
 
+  // Pass-and-play: flip the board so the player to move always sees their own
+  // pieces at the bottom, with their info card directly below the board.
+  const bottomColor = game.turn();
+  const topColor    = bottomColor === 'w' ? 'b' : 'w';
+  const cardFor = color => color === 'w'
+    ? { color:'w', time:whiteTime, timeControl, isActive:isWhiteTurn, capturedTypes:capturedByColor.byWhite, advantage:whiteMat, isTimedOut:timedOut === 'w' }
+    : { color:'b', time:blackTime, timeControl, isActive:isBlackTurn, capturedTypes:capturedByColor.byBlack, advantage:blackMat, isTimedOut:timedOut === 'b' };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800 flex-shrink-0">
@@ -655,23 +663,18 @@ export default function ChessApp() {
       </header>
 
       <main className="flex-1 flex flex-col lg:flex-row gap-4 p-3 lg:p-5 w-full max-w-7xl mx-auto">
-        {/* Board column: black card (rotated) → board → white card */}
+        {/* Board column: opponent card → board → active-player card */}
         <div className="flex flex-col gap-2 w-full lg:flex-1 lg:max-w-2xl mx-auto">
-          {/* Black card rotated 180° — readable for player sitting across the table */}
-          <div style={{ transform: 'rotate(180deg)' }}>
-            <PlayerCard color="b" time={blackTime} timeControl={timeControl} isActive={isBlackTurn}
-              capturedTypes={capturedByColor.byBlack} advantage={blackMat} isTimedOut={timedOut === 'b'} />
-          </div>
+          {/* Top card — the player who is NOT to move */}
+          <PlayerCard {...cardFor(topColor)} />
 
-          {/* Board stays in white's orientation; the rotated black card above
-              keeps the across-the-table player's info readable. */}
+          {/* Board flips to the perspective of the player to move (black → flipped) */}
           <div className="w-full">
-            {renderBoard(false)}
+            {renderBoard(bottomColor === 'b')}
           </div>
 
-          {/* White card — normal orientation */}
-          <PlayerCard color="w" time={whiteTime} timeControl={timeControl} isActive={isWhiteTurn}
-            capturedTypes={capturedByColor.byWhite} advantage={whiteMat} isTimedOut={timedOut === 'w'} />
+          {/* Bottom card — the player to move */}
+          <PlayerCard {...cardFor(bottomColor)} />
 
           <div className="flex gap-2">
             <button onClick={handleUndo} disabled={moveSANs.length === 0 || !!timedOut}
