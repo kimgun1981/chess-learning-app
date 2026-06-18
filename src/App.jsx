@@ -327,10 +327,13 @@ export default function ChessApp() {
   const [whiteTime, setWhiteTime]         = useState(300);
   const [blackTime, setBlackTime]         = useState(300);
   const [timedOut, setTimedOut]           = useState(null);
+  const [boardView, setBoardView]         = useState('w');   // 2P: orientation currently shown
+  const [boardFade, setBoardFade]         = useState(false); // 2P: true while mid-flip (faded out)
 
   const aiInProgress  = useRef(false);
   const aiTimer       = useRef(null);
   const timerInterval = useRef(null);
+  const flipTimer     = useRef(null);
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const game = useMemo(() => {
@@ -427,6 +430,18 @@ export default function ChessApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moveSANs, screen, gameMode, timedOut, timeControl]);
 
+  // 2-player board flip — fade out, swap orientation while hidden, fade back in.
+  useEffect(() => {
+    if (screen !== 'game' || gameMode !== 'human') return;
+    const target = game.turn();
+    if (target === boardView) return;
+    const raf = requestAnimationFrame(() => setBoardFade(true));
+    flipTimer.current = setTimeout(() => { setBoardView(target); setBoardFade(false); }, 220);
+    return () => { cancelAnimationFrame(raf); clearTimeout(flipTimer.current); };
+    // `game` derives from `moveSANs` (already a dep); omitting it is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moveSANs, screen, gameMode, boardView]);
+
   // ── Handlers ───────────────────────────────────────────────────────────────
   function handleSquareClick(sq) {
     if (game.isGameOver() || aiThinking || timedOut) return;
@@ -472,21 +487,23 @@ export default function ChessApp() {
 
   function handleReset() {
     clearTimeout(aiTimer.current); aiInProgress.current = false;
-    clearInterval(timerInterval.current);
+    clearInterval(timerInterval.current); clearTimeout(flipTimer.current);
     setMoveSANs([]); setSelectedSq(null);
     setSelectedPiece(null); setCommentary(''); setHint(null);
+    setBoardView('w'); setBoardFade(false);
     setWhiteTime(timeControl); setBlackTime(timeControl); setTimedOut(null);
     setTip(gameMode === 'ai' ? '💡 중앙 폰(e4 또는 d4)을 먼저 전진시켜보세요!' : '⚪ 백(White) 차례입니다');
   }
 
   function startGame(mode, diff, tc) {
     clearTimeout(aiTimer.current); aiInProgress.current = false;
-    clearInterval(timerInterval.current);
+    clearInterval(timerInterval.current); clearTimeout(flipTimer.current);
     const tc_ = tc ?? timeControl;
     setGameMode(mode);
     if (diff !== undefined) setDifficulty(diff);
     setTimeControl(tc_);
     setWhiteTime(tc_); setBlackTime(tc_); setTimedOut(null);
+    setBoardView('w'); setBoardFade(false);
     setScreen('game');
     setMoveSANs([]); setSelectedSq(null); setSelectedPiece(null);
     setCommentary(''); setHint(null);
@@ -500,7 +517,7 @@ export default function ChessApp() {
 
   function goMenu() {
     clearTimeout(aiTimer.current);
-    clearInterval(timerInterval.current);
+    clearInterval(timerInterval.current); clearTimeout(flipTimer.current);
     setScreen('menu');
   }
 
@@ -645,7 +662,9 @@ export default function ChessApp() {
 
   // Pass-and-play: flip the board so the player to move always sees their own
   // pieces at the bottom, with their info card directly below the board.
-  const bottomColor = game.turn();
+  // `boardView` is the orientation currently displayed (updated mid-fade by the
+  // flip effect), so positioning stays in sync with the fade animation.
+  const bottomColor = boardView;
   const topColor    = bottomColor === 'w' ? 'b' : 'w';
   const cardFor = color => color === 'w'
     ? { color:'w', time:whiteTime, timeControl, isActive:isWhiteTurn, capturedTypes:capturedByColor.byWhite, advantage:whiteMat, isTimedOut:timedOut === 'w' }
@@ -668,8 +687,9 @@ export default function ChessApp() {
           {/* Top card — the player who is NOT to move */}
           <PlayerCard {...cardFor(topColor)} />
 
-          {/* Board flips to the perspective of the player to move (black → flipped) */}
-          <div className="w-full">
+          {/* Board flips to the player to move; opacity fades during the flip */}
+          <div className="w-full transition-opacity duration-200 ease-in-out"
+            style={{ opacity: boardFade ? 0 : 1 }}>
             {renderBoard(bottomColor === 'b')}
           </div>
 
