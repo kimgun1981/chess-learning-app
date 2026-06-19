@@ -430,18 +430,6 @@ export default function ChessApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moveSANs, screen, gameMode, timedOut, timeControl]);
 
-  // 2-player board flip — fade out, swap orientation while hidden, fade back in.
-  useEffect(() => {
-    if (screen !== 'game' || gameMode !== 'human') return;
-    const target = game.turn();
-    if (target === boardView) return;
-    const raf = requestAnimationFrame(() => setBoardFade(true));
-    flipTimer.current = setTimeout(() => { setBoardView(target); setBoardFade(false); }, 220);
-    return () => { cancelAnimationFrame(raf); clearTimeout(flipTimer.current); };
-    // `game` derives from `moveSANs` (already a dep); omitting it is intentional.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moveSANs, screen, gameMode, boardView]);
-
   // ── Handlers ───────────────────────────────────────────────────────────────
   function handleSquareClick(sq) {
     if (game.isGameOver() || aiThinking || timedOut) return;
@@ -483,6 +471,17 @@ export default function ChessApp() {
       const cut = gameMode === 'ai' ? Math.max(0, prev.length - 2) : prev.length - 1;
       return prev.slice(0, cut);
     });
+  }
+
+  // 2-player: manually flip the board (fade out → swap orientation → fade in).
+  function handleFlip() {
+    if (boardFade) return;
+    clearTimeout(flipTimer.current);
+    setBoardFade(true);
+    flipTimer.current = setTimeout(() => {
+      setBoardView(v => (v === 'w' ? 'b' : 'w'));
+      setBoardFade(false);
+    }, 220);
   }
 
   function handleReset() {
@@ -533,8 +532,10 @@ export default function ChessApp() {
   const whiteMat  = materialAdvantage > 0 ? Math.round(materialAdvantage) : 0;
   const blackMat  = materialAdvantage < 0 ? Math.round(-materialAdvantage) : 0;
 
-  // Board renderer — flipped=true shows board from black's perspective
-  function renderBoard(flipped = false) {
+  // Board renderer — flipped=true shows board from black's perspective.
+  // rotateColor: that army's piece symbols are rotated 180° so the player sitting
+  // across the table (offline face-to-face) reads their own pieces upright.
+  function renderBoard(flipped = false, rotateColor = null) {
     const dispRanks = flipped ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
     const dispFiles = flipped ? ['h','g','f','e','d','c','b','a'] : FILES;
     return (
@@ -563,7 +564,8 @@ export default function ChessApp() {
                   {cIdx === 0 && <span className={`absolute top-0.5 left-0.5 text-[clamp(0.45rem,1.2vw,0.7rem)] font-mono font-bold leading-none ${lc}`}>{rank}</span>}
                   {rIdx === 7 && <span className={`absolute bottom-0.5 right-0.5 text-[clamp(0.45rem,1.2vw,0.7rem)] font-mono font-bold leading-none ${lc}`}>{file}</span>}
                   {glyph && (
-                    <span className={piece?.color === 'w'
+                    <span style={piece?.color === rotateColor ? { transform: 'rotate(180deg)' } : undefined}
+                      className={piece?.color === 'w'
                       ? 'text-white [text-shadow:-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000,0_0_6px_rgba(0,0,0,0.6)] select-none'
                       : 'text-gray-900 [text-shadow:0_0_4px_rgba(255,255,255,1),1px_1px_0_rgba(255,255,255,0.8),-1px_-1px_0_rgba(255,255,255,0.8)] select-none'}>
                       {glyph}
@@ -660,12 +662,12 @@ export default function ChessApp() {
   const isBlackTurn = game.turn() === 'b' && !isOver;
   const isWhiteTurn = game.turn() === 'w' && !isOver;
 
-  // Pass-and-play: flip the board so the player to move always sees their own
-  // pieces at the bottom, with their info card directly below the board.
-  // `boardView` is the orientation currently displayed (updated mid-fade by the
-  // flip effect), so positioning stays in sync with the fade animation.
-  const bottomColor = boardView;
-  const topColor    = bottomColor === 'w' ? 'b' : 'w';
+  // Offline face-to-face: the board stays fixed (no auto-flip). `boardView` is
+  // the near-side army shown at the bottom; the far-side army's pieces are
+  // rotated 180° so the player across the table reads them upright. A manual
+  // "보드 뒤집기" button toggles `boardView` with a fade.
+  const bottomColor = boardView;          // near-side player (bottom of board)
+  const topColor    = bottomColor === 'w' ? 'b' : 'w';  // far-side player
   const cardFor = color => color === 'w'
     ? { color:'w', time:whiteTime, timeControl, isActive:isWhiteTurn, capturedTypes:capturedByColor.byWhite, advantage:whiteMat, isTimedOut:timedOut === 'w' }
     : { color:'b', time:blackTime, timeControl, isActive:isBlackTurn, capturedTypes:capturedByColor.byBlack, advantage:blackMat, isTimedOut:timedOut === 'b' };
@@ -682,18 +684,19 @@ export default function ChessApp() {
       </header>
 
       <main className="flex-1 flex flex-col lg:flex-row gap-4 p-3 lg:p-5 w-full max-w-7xl mx-auto">
-        {/* Board column: opponent card → board → active-player card */}
+        {/* Board column: far-side card → board → near-side card */}
         <div className="flex flex-col gap-2 w-full lg:flex-1 lg:max-w-2xl mx-auto">
-          {/* Top card — the player who is NOT to move */}
+          {/* Top card — far-side player (across the table) */}
           <PlayerCard {...cardFor(topColor)} />
 
-          {/* Board flips to the player to move; opacity fades during the flip */}
+          {/* Fixed board; the top army's pieces are rotated 180° to face the
+              far-side player. Opacity fades only on a manual flip. */}
           <div className="w-full transition-opacity duration-200 ease-in-out"
             style={{ opacity: boardFade ? 0 : 1 }}>
-            {renderBoard(bottomColor === 'b')}
+            {renderBoard(bottomColor === 'b', topColor)}
           </div>
 
-          {/* Bottom card — the player to move */}
+          {/* Bottom card — near-side player */}
           <PlayerCard {...cardFor(bottomColor)} />
 
           <div className="flex gap-2">
@@ -705,6 +708,10 @@ export default function ChessApp() {
               🔄 새 게임
             </button>
           </div>
+          <button onClick={handleFlip} disabled={boardFade}
+            className="py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 disabled:opacity-40 rounded-xl font-bold text-sm transition-all">
+            ⟲ 보드 뒤집기
+          </button>
         </div>
 
         {/* Side panel: move history visible on large screens */}
