@@ -5,11 +5,10 @@ import { Chess } from 'chess.js';
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const RANKS = [8, 7, 6, 5, 4, 3, 2, 1];
 
-const UNICODE = {
-  wP:'♙', wN:'♘', wB:'♗', wR:'♖', wQ:'♕', wK:'♔',
-  bP:'♟', bN:'♞', bB:'♝', bR:'♜', bQ:'♛', bK:'♚',
-};
-const pieceGlyph = p => p ? UNICODE[`${p.color}${p.type.toUpperCase()}`] : null;
+// Both colors use the same solid silhouettes; color is conveyed by fill/outline
+// (CSS) only, so white and black pieces share an identical shape.
+const GLYPH = { p:'♟', n:'♞', b:'♝', r:'♜', q:'♛', k:'♚' };
+const pieceGlyph = p => p ? GLYPH[p.type] : null;
 
 const NAMES_KO = { p:'폰', n:'나이트', b:'비숍', r:'룩', q:'퀸', k:'킹' };
 
@@ -301,7 +300,7 @@ function PlayerCard({ color, time, timeControl, isActive, capturedTypes, advanta
                 ? 'text-white [text-shadow:-1px_-1px_0_#555,1px_1px_0_#555]'
                 : 'text-slate-900 drop-shadow'
             }`}>
-              {UNICODE[`${oppColor}${type.toUpperCase()}`]}
+              {GLYPH[type]}
             </span>
           ))}
         {advantage > 0 && (
@@ -686,8 +685,11 @@ export default function ChessApp() {
       <main className="flex-1 flex flex-col lg:flex-row gap-4 p-3 lg:p-5 w-full max-w-7xl mx-auto">
         {/* Board column: far-side card → board → near-side card */}
         <div className="flex flex-col gap-2 w-full lg:flex-1 lg:max-w-2xl mx-auto">
-          {/* Top card — far-side player (across the table) */}
-          <PlayerCard {...cardFor(topColor)} />
+          {/* Top card — far-side player; rotated 180° (like their pieces) so the
+              across-the-table player reads their own info upright. */}
+          <div style={{ transform: 'rotate(180deg)' }}>
+            <PlayerCard {...cardFor(topColor)} />
+          </div>
 
           {/* Fixed board; the top army's pieces are rotated 180° to face the
               far-side player. Opacity fades only on a manual flip. */}
