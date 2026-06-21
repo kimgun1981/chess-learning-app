@@ -12,6 +12,12 @@ const RANKS = [8, 7, 6, 5, 4, 3, 2, 1];
 const GLYPH = { p:'♟︎', n:'♞︎', b:'♝︎', r:'♜︎', q:'♛︎', k:'♚︎' };
 const pieceGlyph = p => p ? GLYPH[p.type] : null;
 
+// Shared piece coloring (white fill w/ dark outline, dark fill w/ light outline).
+const PIECE_CLASS = {
+  w: 'text-white [text-shadow:-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000,0_0_6px_rgba(0,0,0,0.6)]',
+  b: 'text-gray-900 [text-shadow:0_0_4px_rgba(255,255,255,1),1px_1px_0_rgba(255,255,255,0.8),-1px_-1px_0_rgba(255,255,255,0.8)]',
+};
+
 const NAMES_KO = { p:'폰', n:'나이트', b:'비숍', r:'룩', q:'퀸', k:'킹' };
 
 const DESCRIPTIONS = {
@@ -222,6 +228,27 @@ function TimeSelect({ onSelect, onBack }) {
   );
 }
 
+// ─── Promotion Modal ──────────────────────────────────────────────────────────
+function PromotionModal({ color, rotated, onSelect }) {
+  return (
+    <div className="absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 rounded-2xl">
+      <div style={rotated ? { transform: 'rotate(180deg)' } : undefined}
+        className="bg-slate-800 rounded-2xl p-5 border border-slate-600 shadow-2xl">
+        <p className="text-center text-sm font-bold text-slate-300 mb-3">승격할 기물을 선택하세요</p>
+        <div className="flex gap-2">
+          {['q', 'r', 'b', 'n'].map(t => (
+            <button key={t} onClick={() => onSelect(t)}
+              className="w-14 h-14 flex flex-col items-center justify-center bg-slate-700 hover:bg-slate-600 rounded-xl transition-all">
+              <span className={`text-3xl leading-none select-none ${PIECE_CLASS[color]}`}>{GLYPH[t]}</span>
+              <span className="text-[0.6rem] text-slate-400 mt-0.5">{NAMES_KO[t]}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Game Over Modal ──────────────────────────────────────────────────────────
 function GameOverModal({ game, mode, timedOut, onReset, onMenu }) {
   let icon, title, sub;
@@ -330,6 +357,7 @@ export default function ChessApp() {
   const [timedOut, setTimedOut]           = useState(null);
   const [boardView, setBoardView]         = useState('w');   // 2P: orientation currently shown
   const [boardFade, setBoardFade]         = useState(false); // 2P: true while mid-flip (faded out)
+  const [promotion, setPromotion]         = useState(null);  // { from, to, color } when choosing
 
   const aiInProgress  = useRef(false);
   const aiTimer       = useRef(null);
@@ -432,19 +460,35 @@ export default function ChessApp() {
   }, [moveSANs, screen, gameMode, timedOut, timeControl]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
+  // Apply a move (promo = promotion piece, ignored for non-promotion moves).
+  function applyMove(from, to, promo) {
+    const g = new Chess(game.fen());
+    const result = g.move({ from, to, promotion: promo });
+    if (!result) return;
+    setMoveSANs(prev => [...prev, result.san]);
+    if (gameMode === 'ai' && !g.isGameOver()) { setTip('🤖 AI가 최선의 수를 고민하고 있습니다...'); setCommentary(''); }
+    else if (gameMode === 'human' && !g.isGameOver()) {
+      setTip(g.turn() === 'w' ? '⚪ 백(White) 차례입니다' : '⚫ 흑(Black) 차례입니다');
+    }
+  }
+
+  function handlePromote(type) {
+    if (!promotion) return;
+    applyMove(promotion.from, promotion.to, type);
+    setPromotion(null);
+  }
+
   function handleSquareClick(sq) {
-    if (game.isGameOver() || aiThinking || timedOut) return;
+    if (game.isGameOver() || aiThinking || timedOut || promotion) return;
     if (gameMode === 'ai' && game.turn() !== 'w') return;
     setHint(null);
     if (selectedSq && legalTargets.has(sq)) {
-      const g = new Chess(game.fen());
-      const result = g.move({ from: selectedSq, to: sq, promotion: 'q' });
-      if (result) {
-        setMoveSANs(prev => [...prev, result.san]);
-        if (gameMode === 'ai' && !g.isGameOver()) { setTip('🤖 AI가 최선의 수를 고민하고 있습니다...'); setCommentary(''); }
-        else if (gameMode === 'human' && !g.isGameOver()) {
-          setTip(g.turn() === 'w' ? '⚪ 백(White) 차례입니다' : '⚫ 흑(Black) 차례입니다');
-        }
+      // Pawn reaching the last rank → ask which piece to promote to.
+      const isPromo = legalMoves.some(m => m.to === sq && m.flags.includes('p'));
+      if (isPromo) {
+        setPromotion({ from: selectedSq, to: sq, color: game.turn() });
+      } else {
+        applyMove(selectedSq, sq);
       }
       setSelectedSq(null); setSelectedPiece(null);
       return;
@@ -464,7 +508,8 @@ export default function ChessApp() {
 
   function handleUndo() {
     clearTimeout(aiTimer.current); aiInProgress.current = false;
-    clearInterval(timerInterval.current);
+    clearInterval(timerInterval.current); clearTimeout(flipTimer.current);
+    setBoardFade(false); setPromotion(null);
     setHint(null);
     setSelectedSq(null); setSelectedPiece(null); setCommentary('');
     setTip('한 수 물렀습니다.');
@@ -490,7 +535,7 @@ export default function ChessApp() {
     clearInterval(timerInterval.current); clearTimeout(flipTimer.current);
     setMoveSANs([]); setSelectedSq(null);
     setSelectedPiece(null); setCommentary(''); setHint(null);
-    setBoardView('w'); setBoardFade(false);
+    setBoardView('w'); setBoardFade(false); setPromotion(null);
     setWhiteTime(timeControl); setBlackTime(timeControl); setTimedOut(null);
     setTip(gameMode === 'ai' ? '💡 중앙 폰(e4 또는 d4)을 먼저 전진시켜보세요!' : '⚪ 백(White) 차례입니다');
   }
@@ -503,7 +548,7 @@ export default function ChessApp() {
     if (diff !== undefined) setDifficulty(diff);
     setTimeControl(tc_);
     setWhiteTime(tc_); setBlackTime(tc_); setTimedOut(null);
-    setBoardView('w'); setBoardFade(false);
+    setBoardView('w'); setBoardFade(false); setPromotion(null);
     setScreen('game');
     setMoveSANs([]); setSelectedSq(null); setSelectedPiece(null);
     setCommentary(''); setHint(null);
@@ -518,6 +563,7 @@ export default function ChessApp() {
   function goMenu() {
     clearTimeout(aiTimer.current);
     clearInterval(timerInterval.current); clearTimeout(flipTimer.current);
+    setPromotion(null);
     setScreen('menu');
   }
 
@@ -553,6 +599,9 @@ export default function ChessApp() {
               const glyph      = pieceGlyph(piece);
               const isLight    = (rIdx + cIdx) % 2 === 0;
               const lc         = isLight ? 'text-amber-700/70' : 'text-amber-100/70';
+              // 2-player: the far half (top, rIdx<4) faces the across-the-table
+              // player, so its coordinate labels are rotated 180° to read upright.
+              const farHalf    = !!rotateColor && rIdx < 4;
 
               let ring = '';
               if (isCheck)         ring = 'ring-4 ring-inset ring-red-500 bg-red-400/30';
@@ -562,13 +611,13 @@ export default function ChessApp() {
               return (
                 <button key={sq} onClick={() => handleSquareClick(sq)}
                   className={`relative flex items-center justify-center h-full text-[clamp(1rem,5vw,3rem)] ${isLight ? 'bg-amber-100' : 'bg-amber-700'} ${ring} hover:brightness-110 transition-all`}>
-                  {cIdx === 0 && <span className={`absolute top-0.5 left-0.5 text-[clamp(0.45rem,1.2vw,0.7rem)] font-mono font-bold leading-none ${lc}`}>{rank}</span>}
+                  {cIdx === 0 && <span style={farHalf ? { transform: 'rotate(180deg)' } : undefined} className={`absolute top-0.5 left-0.5 text-[clamp(0.45rem,1.2vw,0.7rem)] font-mono font-bold leading-none ${lc}`}>{rank}</span>}
                   {rIdx === 7 && <span className={`absolute bottom-0.5 right-0.5 text-[clamp(0.45rem,1.2vw,0.7rem)] font-mono font-bold leading-none ${lc}`}>{file}</span>}
+                  {/* 2-player: extra file labels on the top edge, rotated for the far player */}
+                  {rotateColor && rIdx === 0 && <span style={{ transform: 'rotate(180deg)' }} className={`absolute top-0.5 right-0.5 text-[clamp(0.45rem,1.2vw,0.7rem)] font-mono font-bold leading-none ${lc}`}>{file}</span>}
                   {glyph && (
                     <span style={piece?.color === rotateColor ? { transform: 'rotate(180deg)' } : undefined}
-                      className={piece?.color === 'w'
-                      ? 'text-white [text-shadow:-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000,0_0_6px_rgba(0,0,0,0.6)] select-none'
-                      : 'text-gray-900 [text-shadow:0_0_4px_rgba(255,255,255,1),1px_1px_0_rgba(255,255,255,0.8),-1px_-1px_0_rgba(255,255,255,0.8)] select-none'}>
+                      className={`${PIECE_CLASS[piece.color]} select-none`}>
                       {glyph}
                     </span>
                   )}
@@ -578,6 +627,7 @@ export default function ChessApp() {
             })
           )}
         </div>
+        {promotion && <PromotionModal color={promotion.color} rotated={promotion.color === rotateColor} onSelect={handlePromote} />}
         {isOver && <GameOverModal game={game} mode={gameMode} timedOut={timedOut} onReset={handleReset} onMenu={goMenu} />}
       </div>
     );
@@ -718,14 +768,14 @@ export default function ChessApp() {
           </button>
         </div>
 
-        {/* Side panel: move history visible on large screens */}
-        <div className="hidden lg:flex flex-col gap-3 w-64 xl:w-80">
+        {/* Side panel: tip + move history. Stacks below the board on mobile. */}
+        <div className="flex flex-col gap-3 w-full lg:w-64 xl:w-80">
           <div className={`rounded-xl px-4 py-3 border ${game.isCheck() ? 'bg-red-950/80 border-red-500/60' : 'bg-slate-800 border-slate-700'}`}>
             <p className="text-sm font-semibold leading-relaxed text-emerald-300">{tip}</p>
           </div>
           <div className="bg-slate-800 rounded-xl p-3 border border-slate-700 flex-1">
             <p className="text-xs font-semibold text-slate-400 mb-2">📋 기보 ({moveSANs.length}수)</p>
-            <div className="overflow-y-auto text-xs font-mono max-h-[60vh]">
+            <div className="overflow-y-auto text-xs font-mono max-h-40 lg:max-h-[60vh]">
               {moveSANs.length === 0 ? <p className="text-slate-600 text-center py-2">아직 수가 없습니다</p> : (
                 <div className="grid grid-cols-[1.5rem_1fr_1fr] gap-x-2 gap-y-0.5">
                   {Array.from({ length: pairCount }).map((_, i) => (
