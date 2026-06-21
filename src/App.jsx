@@ -5,9 +5,11 @@ import { Chess } from 'chess.js';
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const RANKS = [8, 7, 6, 5, 4, 3, 2, 1];
 
-// Both colors use the same solid silhouettes; color is conveyed by fill/outline
-// (CSS) only, so white and black pieces share an identical shape.
-const GLYPH = { p:'♟', n:'♞', b:'♝', r:'♜', q:'♛', k:'♚' };
+// Both colors use the same solid silhouettes; color is conveyed by CSS fill
+// only, so white and black pieces share an identical shape. The trailing
+// U+FE0E (text variation selector) forces monochrome rendering so these glyphs
+// are NOT shown as fixed-color emoji — otherwise white pieces appear black.
+const GLYPH = { p:'♟︎', n:'♞︎', b:'♝︎', r:'♜︎', q:'♛︎', k:'♚︎' };
 const pieceGlyph = p => p ? GLYPH[p.type] : null;
 
 const NAMES_KO = { p:'폰', n:'나이트', b:'비숍', r:'룩', q:'퀸', k:'킹' };
