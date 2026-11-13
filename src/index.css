@@ -4,3 +4,88 @@ html, body, #root {
   height: 100%;
   scrollbar-gutter: stable;
 }
+
+html {
+  background: #020617;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  overscroll-behavior: none;
+}
+
+button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  background-image:
+    radial-gradient(circle at 15% 0%, rgba(16, 185, 129, 0.09), transparent 28rem),
+    radial-gradient(circle at 90% 20%, rgba(14, 165, 233, 0.08), transparent 26rem);
+}
+
+.safe-page {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+.safe-header {
+  padding-top: max(env(safe-area-inset-top), 0.5rem);
+  padding-left: max(env(safe-area-inset-left), 0.75rem);
+  padding-right: max(env(safe-area-inset-right), 0.75rem);
+}
+
+.two-player-column {
+  width: min(100%, calc(100dvh - 20rem), 42rem);
+}
+
+.mode-card {
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.mode-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255,255,255,0.06), transparent 42%);
+}
+
+@media (hover: hover) {
+  .mode-card:hover {
+    transform: translateY(-4px);
+  }
+}
+
+.ai-board,
+.lesson-board {
+  max-width: min(100%, calc(100dvh - 5.5rem), 32.5rem);
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .two-player-column {
+    width: min(92vw, calc(100dvh - 5rem), 32rem);
+  }
+
+  .ai-board,
+  .lesson-board {
+    width: min(100%, calc(100dvh - 4.5rem));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
