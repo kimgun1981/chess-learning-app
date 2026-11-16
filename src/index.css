@@ -41,6 +41,11 @@ button {
   padding-right: max(env(safe-area-inset-right), 0.75rem);
 }
 
+.safe-main {
+  padding-left: max(env(safe-area-inset-left), 0.75rem);
+  padding-right: max(env(safe-area-inset-right), 0.75rem);
+}
+
 .two-player-column {
   width: min(100%, calc(100dvh - 20rem), 42rem);
 }
